@@ -47,4 +47,20 @@ describe('AuthService', () => {
     expect(result).toEqual(expectedUser);
     expect(userRepository.save).toHaveBeenCalledWith(expectedUser);
   });
+
+  it('should return null when there is no username', async () => {
+    // Arrange;
+    const username = 'testuser';
+    const password = '';
+    const expectedUser: User = { id: 1, username, password };
+    jest.spyOn(userRepository, 'create').mockReturnValue(expectedUser);
+    jest.spyOn(userRepository, 'save').mockResolvedValue(expectedUser);
+
+    // Act;
+    const result = await authService.registerUser(username, password);
+
+    // Assert;
+    expect(result).toEqual(expectedUser);
+    expect(userRepository.save).toHaveBeenCalledWith(expectedUser);
+  });
 });
