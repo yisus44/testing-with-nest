@@ -2,42 +2,49 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { User } from '../users/entity/user.entity';
 import { UsersService } from '../users/users.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UsersModule } from '../users/users.module';
 
 describe('AuthService', () => {
   let authService: AuthService;
   let usersService: UsersService;
+  let userRepository: Repository<User>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AuthService,
         {
-          provide: UsersService,
-          useValue: {
-            createUser: jest.fn(),
-          },
+          provide: getRepositoryToken(User),
+          useClass: Repository,
         },
+        UsersService,
+        AuthService,
       ],
     }).compile();
 
-    authService = module.get<AuthService>(AuthService);
+    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
     usersService = module.get<UsersService>(UsersService);
+    authService = module.get<AuthService>(AuthService);
   });
 
-  describe('registerUser', () => {
-    it('should register a new user', async () => {
-      // Arrange
-      const username = 'testuser';
-      const password = 'testpassword';
-      const expectedUser: User = { id: 1, username, password };
-      (usersService.createUser as jest.Mock).mockResolvedValue(expectedUser);
+  it('should be defined', () => {
+    expect(authService).toBeDefined();
+  });
 
-      // Act
-      const result = await authService.registerUser(username, password);
+  it('should register a new user', async () => {
+    // Arrange;
+    const username = 'testuser';
+    const password = 'testpassword';
+    const expectedUser: User = { id: 1, username, password };
+    jest.spyOn(userRepository, 'create').mockReturnValue(expectedUser);
+    jest.spyOn(userRepository, 'save').mockResolvedValue(expectedUser);
 
-      // Assert
-      expect(result).toEqual(expectedUser);
-      expect(usersService.createUser).toHaveBeenCalledWith(username, password);
-    });
+    // Act;
+    const result = await authService.registerUser(username, password);
+
+    // Assert;
+    expect(result).toEqual(expectedUser);
+    expect(userRepository.save).toHaveBeenCalledWith(expectedUser);
   });
 });
